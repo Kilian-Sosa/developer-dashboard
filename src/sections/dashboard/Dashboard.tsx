@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 
 import { config } from "../../devdash_config";
 import { GitHubApiGitHubRepositoryRepository } from "../../infrastructure/GitHubApiGitHubRepositoryRepository";
-import { GitHubApiResponses } from "../../infrastructure/GitHubApiResponse";
 import styles from "./Dashboard.module.scss";
 import Brand from "/assets/images/brand.svg";
 import Check from "/assets/images/check.svg";
@@ -14,11 +13,12 @@ import Forks from "/assets/images/repo-forked.svg";
 import Start from "/assets/images/star.svg";
 import Unlock from "/assets/images/unlock.svg";
 import Watchers from "/assets/images/watchers.svg";
+import { GitHubRepository } from "../../domain/GitHubRepository";
 
-const isoToReadableDate = (lastUpdate: string): string => {
-	const lastUpdateDate = new Date(lastUpdate);
+const isoToReadableDate = (lastUpdateDate: Date): string => {
 	const currentDate = new Date();
-	const diffDays = currentDate.getDate() - lastUpdateDate.getDate();
+	const diffTime = currentDate.getTime() - lastUpdateDate.getTime();
+	const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
 
 	if (diffDays === 0) {
 		return "today";
@@ -33,7 +33,7 @@ const isoToReadableDate = (lastUpdate: string): string => {
 
 export function Dashboard() {
 	const repository = new GitHubApiGitHubRepositoryRepository(config.github_access_token);
-	const [repositoryData, setRepositoryData] = useState<GitHubApiResponses[]>([]);
+	const [repositoryData, setRepositoryData] = useState<GitHubRepository[]>([]);
 
 	useEffect(() => {
 		repository
@@ -53,25 +53,25 @@ export function Dashboard() {
 			</header>
 			<section className={styles.container}>
 				{repositoryData.map((widget) => (
-					<article className={styles.widget} key={widget.repositoryData.id}>
+					<article className={styles.widget} key={`${widget.id.owner}/${widget.id.name}`}>
 						<header className={styles.widget__header}>
 							<a
 								className={styles.widget__title}
-								href={widget.repositoryData.html_url}
+								href={widget.url}
 								target="_blank"
-								title={`${widget.repositoryData.owner.login}/${widget.repositoryData.name}`}
+								title={`${widget.id.owner}/${widget.id.name}`}
 								rel="noreferrer"
 							>
-								{widget.repositoryData.owner.login}/{widget.repositoryData.name}
+								{widget.id.owner}/{widget.id.name}
 							</a>
-							{widget.repositoryData.private ? <img src={Lock} alt="Lock image" /> : <img src={Unlock} alt="Unlock image" />}
+							{widget.private ? <img src={Lock} alt="Lock image" /> : <img src={Unlock} alt="Unlock image" />}
 						</header>
 						<div className={styles.widget__body}>
 							<div className={styles.widget__status}>
-								<p>Last update {isoToReadableDate(widget.repositoryData.updated_at)}</p>
-								{widget.ciStatus.workflow_runs.length > 0 && (
+								<p>Last update {isoToReadableDate(widget.updatedAt)}</p>
+								{widget.hasWorkflows && (
 									<div>
-										{widget.ciStatus.workflow_runs[0].status === "completed" ? (
+										{widget.isLastWorkflowSuccess ? (
 											<img src={Check} alt="Check image" />
 										) : (
 											<img src={Error} alt="Error image" />
@@ -79,28 +79,28 @@ export function Dashboard() {
 									</div>
 								)}
 							</div>
-							<p className={styles.widget__description}>{widget.repositoryData.description}</p>
+							<p className={styles.widget__description}>{widget.description}</p>
 						</div>
 						<footer className={styles.widget__footer}>
 							<div className={styles.widget__stat}>
 								<img src={Start} alt="Start image" />
-								<span>{widget.repositoryData.stargazers_count}</span>
+								<span>{widget.stars}</span>
 							</div>
 							<div className={styles.widget__stat}>
 								<img src={Watchers} alt="Watchers image" />
-								<span>{widget.repositoryData.watchers_count}</span>
+								<span>{widget.watchers}</span>
 							</div>
 							<div className={styles.widget__stat}>
 								<img src={Forks} alt="Forks image" />
-								<span>{widget.repositoryData.forks_count}</span>
+								<span>{widget.forks}</span>
 							</div>
 							<div className={styles.widget__stat}>
 								<img src={IssueOpened} alt="IssueOpened image" />
-								<span>{widget.repositoryData.open_issues_count}</span>
+								<span>{widget.issues}</span>
 							</div>
 							<div className={styles.widget__stat}>
 								<img src={PullRequests} alt="PullRequests image" />
-								<span>{widget.pullRequests.length}</span>
+								<span>{widget.pullRequests}</span>
 							</div>
 						</footer>
 					</article>
