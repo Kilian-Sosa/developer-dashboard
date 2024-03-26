@@ -1,15 +1,19 @@
-import Brand from "../../../public/images/brand.svg";
-import Check from "../../../public/images/check.svg";
+import { useEffect, useState } from "react";
+
+import { config } from "../../devdash_config";
+import { GitHubApiGitHubRepositoryRepository } from "../../infrastructure/GitHubApiGitHubRepositoryRepository";
+import { GitHubApiResponses } from "../../infrastructure/GitHubApiResponse";
 import styles from "./Dashboard.module.scss";
-import Error from "../../../public/images/error.svg";
-import PullRequests from "../../../public/images/git-pull-request.svg";
-import IssueOpened from "../../../public/images/issue-opened.svg";
-import Lock from "../../../public/images/lock.svg";
-import Forks from "../../../public/images/repo-forked.svg";
-import Start from "../../../public/images/star.svg";
-import Unlock from "../../../public/images/unlock.svg";
-import Watchers from "../../../public/images/watchers.svg";
-import { InMemoryGitHubRepositoryRepository } from "../../infrastructure/InMemoryGitHubRepositoryRepository";
+import Brand from "/assets/images/brand.svg";
+import Check from "/assets/images/check.svg";
+import Error from "/assets/images/error.svg";
+import PullRequests from "/assets/images/git-pull-request.svg";
+import IssueOpened from "/assets/images/issue-opened.svg";
+import Lock from "/assets/images/lock.svg";
+import Forks from "/assets/images/repo-forked.svg";
+import Start from "/assets/images/star.svg";
+import Unlock from "/assets/images/unlock.svg";
+import Watchers from "/assets/images/watchers.svg";
 
 const isoToReadableDate = (lastUpdate: string): string => {
 	const lastUpdateDate = new Date(lastUpdate);
@@ -26,10 +30,19 @@ const isoToReadableDate = (lastUpdate: string): string => {
 
 	return `${diffDays} days ago`;
 };
-const repository = new InMemoryGitHubRepositoryRepository();
-const repositories = repository.search();
 
 export function Dashboard() {
+	const repository = new GitHubApiGitHubRepositoryRepository(config.github_access_token);
+	const [repositoryData, setRepositoryData] = useState<GitHubApiResponses[]>([]);
+
+	useEffect(() => {
+		repository
+			.search(config.widgets.map((widget) => widget.repository_url))
+			.then((repositoryData) => {
+				setRepositoryData(repositoryData);
+			});
+	}, []);
+
 	return (
 		<>
 			<header className={styles.header}>
@@ -39,26 +52,26 @@ export function Dashboard() {
 				</section>
 			</header>
 			<section className={styles.container}>
-				{repositories.map((widget) => (
+				{repositoryData.map((widget) => (
 					<article className={styles.widget} key={widget.repositoryData.id}>
 						<header className={styles.widget__header}>
 							<a
 								className={styles.widget__title}
 								href={widget.repositoryData.html_url}
 								target="_blank"
-								title={`${widget.repositoryData.organization.login}/${widget.repositoryData.name}`}
+								title={`${widget.repositoryData.owner.login}/${widget.repositoryData.name}`}
 								rel="noreferrer"
 							>
-								{widget.repositoryData.organization.login}/{widget.repositoryData.name}
+								{widget.repositoryData.owner.login}/{widget.repositoryData.name}
 							</a>
 							{widget.repositoryData.private ? <img src={Lock} alt="Lock image" /> : <img src={Unlock} alt="Unlock image" />}
 						</header>
 						<div className={styles.widget__body}>
 							<div className={styles.widget__status}>
 								<p>Last update {isoToReadableDate(widget.repositoryData.updated_at)}</p>
-								{widget.CiStatus.workflow_runs.length > 0 && (
+								{widget.ciStatus.workflow_runs.length > 0 && (
 									<div>
-										{widget.CiStatus.workflow_runs[0].status === "completed" ? (
+										{widget.ciStatus.workflow_runs[0].status === "completed" ? (
 											<img src={Check} alt="Check image" />
 										) : (
 											<img src={Error} alt="Error image" />
@@ -82,12 +95,12 @@ export function Dashboard() {
 								<span>{widget.repositoryData.forks_count}</span>
 							</div>
 							<div className={styles.widget__stat}>
-								<img src={IssueOpened} alt="Issue Opened image" />
+								<img src={IssueOpened} alt="IssueOpened image" />
 								<span>{widget.repositoryData.open_issues_count}</span>
 							</div>
 							<div className={styles.widget__stat}>
-								<img src={PullRequests} alt="Pull Requests image" />
-								<span>{widget.pullRequest.length}</span>
+								<img src={PullRequests} alt="PullRequests image" />
+								<span>{widget.pullRequests.length}</span>
 							</div>
 						</footer>
 					</article>
