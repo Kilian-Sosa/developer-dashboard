@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import { config } from "../../devdash_config";
-import { GitHubApiGitHubRepositoryRepository } from "../../infrastructure/GitHubApiGitHubRepositoryRepository";
 import styles from "./Dashboard.module.scss";
 import Brand from "/assets/images/brand.svg";
 import Check from "/assets/images/check.svg";
@@ -14,6 +13,7 @@ import Start from "/assets/images/star.svg";
 import Unlock from "/assets/images/unlock.svg";
 import Watchers from "/assets/images/watchers.svg";
 import { GitHubRepository } from "../../domain/GitHubRepository";
+import { GitHubRepositoryRepository } from "../../domain/GitHubRepositoryRepository";
 
 const isoToReadableDate = (lastUpdateDate: Date): string => {
 	const currentDate = new Date();
@@ -31,8 +31,7 @@ const isoToReadableDate = (lastUpdateDate: Date): string => {
 	return `${diffDays} days ago`;
 };
 
-export function Dashboard() {
-	const repository = new GitHubApiGitHubRepositoryRepository(config.github_access_token);
+export function Dashboard({repository}: { repository: GitHubRepositoryRepository }) {
 	const [repositoryData, setRepositoryData] = useState<GitHubRepository[]>([]);
 
 	useEffect(() => {
